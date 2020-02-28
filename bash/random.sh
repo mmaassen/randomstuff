@@ -16,90 +16,8 @@ TEXTCYN="\033[36m"
 TEXTWHT="\033[37m"
 
 #--------------------------------------------
-# Check functions
+# Other functions
 #--------------------------------------------
-fileExists(){
-    if [[ ! -f "$1" ]]; then
-        echo "[ERROR] File not found"
-        echo "$1"
-        echo ""
-        exit 1
-    fi
-}
-
-checkSudo(){
-    if [ $(id -u) -ne 0 ]; then
-        echo "[ERROR] Gebruik sudo!"
-        exit 1
-    fi
-}
-
-hasSudo(){
-    if groups $USER | grep &>/dev/null 'sudo'; then
-        echo true
-    else
-        echo false
-    fi
-}
-
-checkJava(){
-    if [[ -d $JAVA_HOME ]]; then
-        echo "[!] JAVA_HOME niet gevonden"
-        echo "Mogelijk is er geen JDK geinstalleerd!"
-        exit 1
-    fi
-}
-
-checkInstalled(){
-    APP=$1
-    if [[ `dpkg -l | grep "$APP" -c` -gt 0 ]]; then
-        echo "[!] $APP is al geinstalleerd!"
-        exit 1
-    fi
-}
-
-#--------------------------------------------
-# Overige functions
-#--------------------------------------------
-stopWip(){
-    echo "[!] Dit script is nog niet klaar voor gebruik!!"
-    echo
-    exit 1
-}
-
-sleeper(){
-    NUM=$1
-    echo "$NUM sec. geduld aub.."
-    while [[ $NUM -ne 0 ]]; do
-        echo -n "$NUM "
-        let NUM=NUM-1
-        sleep 1
-    done
-    echo
-}
-
-echoEpochNano(){
-    date +%s%N
-}
-
-rePlaceHolder(){
-    if [[ $# -ne 2 ]]; then
-        # printError "rePlaceHolder requires 2 arguments"
-        echo "rePlaceHolder requires 2 arguments"
-    else
-        PLACEHOLDER_FILE="$1"
-        FILE_TO_EDIT="$2"
-        cat $PLACEHOLDER_FILE | egrep '^[A-Z]' | while read line; do
-            SEARCH=$(echo $line|awk -F'=' '{print $1}')
-            REPLACE=$(echo $line|awk -F'=' '{print $2}')
-            if grep "$SEARCH" "$FILE_TO_EDIT">/dev/null; then
-                printNotice "Replace '$SEARCH' with '$REPLACE' in '$FILE_TO_EDIT'"
-            fi
-            sed -i "s#$SEARCH#$REPLACE#g" "$FILE_TO_EDIT"
-        done
-
-    fi
-}
 
 spinner(){
     PID=$1
@@ -114,29 +32,6 @@ spinner(){
     done
 }
 
-
-#--------------------------------------------
-# Apt functions
-#--------------------------------------------
-updateRepo(){
-    printSep "Updating apt repository"
-    apt-get update >/dev/null &
-    spinner $!
-}
-
-aptInstall(){
-    printSep "Installing $@"
-    apt-get install $@ -y >/dev/null &
-    spinner $!
-}
-
-#--------------------------------------------
-# Database functions
-#--------------------------------------------
-runQuery(){
-    QUERY="$1"
-    echo "$QUERY" | sudo -i -u postgres psql
-}
 
 #--------------------------------------------
 # Print Functions

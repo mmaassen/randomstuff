@@ -24,7 +24,7 @@ printError(){
     echo -e "${TEXTRED}[ERROR] ${1} ${RS}"
 }
 printWarning(){
-    echo -e "${TEXTYEL}[ERROR] ${1} ${RS}"
+    echo -e "${TEXTYEL}[WARNING] ${1} ${RS}"
 }
 printNotice(){
     echo -e "${TEXTCYN}[NOTICE] ${1} ${RS}"
@@ -59,7 +59,7 @@ printMenu(){
 
 m_der2pem(){
     if [[ $# -eq 0 ]]; then
-        echo "$(basename $0) /path/to/cert.cer "
+        printInfo "$(basename $0) /path/to/cert.cer "
         return 0
     fi
 
@@ -75,12 +75,12 @@ m_der2pem(){
 
 m_download_certificate(){
     if [[ $# -eq 0 ]]; then
-        echo "Usage: openssl_download_certificate <host> <port> [/path/to/certificate.pem]"
-        echo "------------"
-        echo " <host>: required"
-        echo " <port>: required"
-        echo " [path]: optional default /tmp/"
-        echo "------------"
+        printInfo "Usage: openssl_download_certificate <host> <port> [/path/to/certificate.pem]"
+        printInfo "------------"
+        printInfo " <host>: required"
+        printInfo " <port>: required"
+        printInfo " [path]: optional default /tmp/"
+        printInfo "------------"
         return 0
     fi
     HOST=${1}
@@ -96,14 +96,14 @@ m_download_certificate(){
 
 m_nc(){
     if [[ $# -eq 0 ]]; then
-        echo "Usage: tnc <host> <port>"
-        echo "------------"
-        echo " <host>: required"
-        echo " <port>: required"
-        echo "------------"
+        printInfo "Usage: tnc <host> <port>"
+        printInfo "------------"
+        printInfo " <host>: required"
+        printInfo " <port>: required"
+        printInfo "------------"
         return 0
     fi
     HOST=${1}
     PORT=${2}
-    echo "QUIT" | nc -w 1 -v $HOST $PORT
+    printSuccess $(echo "QUIT" | nc -w 1 -v $HOST $PORT)
 }
