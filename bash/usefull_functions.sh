@@ -57,7 +57,7 @@ printMenu(){
 ##------------------------
 
 
-der2pem(){
+m_der2pem(){
     if [[ $# -eq 0 ]]; then
         echo "$(basename $0) /path/to/cert.cer "
         return 0
@@ -73,7 +73,7 @@ der2pem(){
 
 
 
-openssl_download_certificate(){
+m_download_certificate(){
     if [[ $# -eq 0 ]]; then
         echo "Usage: openssl_download_certificate <host> <port> [/path/to/certificate.pem]"
         echo "------------"
@@ -87,14 +87,14 @@ openssl_download_certificate(){
     PORT=${2}
     SAVE=${3:-/tmp/${HOST}.pem}
     echo "QUIT" | openssl s_client -showcerts -connect ${HOST}:${PORT:-443} | openssl x509 -out ${SAVE}
-    printSuccess "[>] Your certificate is saved at: ${SAVE}"
+    printSuccess "Your certificate is saved at: ${SAVE}"
 }
 
 ##------------------------
 # NETWORK FUNCTIONS
 ##------------------------
 
-tnc(){
+m_nc(){
     if [[ $# -eq 0 ]]; then
         echo "Usage: tnc <host> <port>"
         echo "------------"
@@ -105,5 +105,5 @@ tnc(){
     fi
     HOST=${1}
     PORT=${2}
-    printSuccess "QUIT" | nc -w 1 -v $HOST $PORT
+    echo "QUIT" | nc -w 1 -v $HOST $PORT
 }
