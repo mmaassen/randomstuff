@@ -59,7 +59,7 @@ printMenu(){
 
 m_der2pem(){
     if [[ $# -eq 0 ]]; then
-        printInfo "$(basename $0) /path/to/cert.cer "
+        printNotice "$(basename $0) /path/to/cert.cer "
         return 0
     fi
 
@@ -75,12 +75,12 @@ m_der2pem(){
 
 m_download_certificate(){
     if [[ $# -eq 0 ]]; then
-        printInfo "Usage: openssl_download_certificate <host> <port> [/path/to/certificate.pem]"
-        printInfo "------------"
-        printInfo " <host>: required"
-        printInfo " <port>: required"
-        printInfo " [path]: optional default /tmp/"
-        printInfo "------------"
+        printNotice "Usage: openssl_download_certificate <host> <port> [/path/to/certificate.pem]"
+        printNotice "------------"
+        printNotice " <host>: required"
+        printNotice " <port>: required"
+        printNotice " [path]: optional default /tmp/"
+        printNotice "------------"
         return 0
     fi
     HOST=${1}
@@ -96,11 +96,11 @@ m_download_certificate(){
 
 m_nc(){
     if [[ $# -eq 0 ]]; then
-        printInfo "Usage: tnc <host> <port>"
-        printInfo "------------"
-        printInfo " <host>: required"
-        printInfo " <port>: required"
-        printInfo "------------"
+        printNotice "Usage: tnc <host> <port>"
+        printNotice "------------"
+        printNotice " <host>: required"
+        printNotice " <port>: required"
+        printNotice "------------"
         return 0
     fi
     HOST=${1}
