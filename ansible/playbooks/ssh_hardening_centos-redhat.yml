@@ -1,0 +1,141 @@
+---
+# -------------------------------------------------------------------
+# Created by: Marco Maassen
+# Guide used: https://www.sshaudit.com/hardening_guides.html#rhel8
+# -------------------------------------------------------------------
+- hosts: all
+  become: yes
+
+  vars:
+    sshd_configs:
+      - key: Port
+        value: 22
+      - key: ListenAddress
+        value: 0.0.0.0
+      - key: ClientAliveInterval
+        value: 300
+      - key: ClientAliveCountMax
+        value: 2
+      - key: X11Forwarding
+        value: "no"
+      - key: PermitRootLogin
+        value: "yes"
+    ssh_crypto:
+      KexAlgorithms: curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+      Ciphers: chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+      MACs: hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+      HostKeyAlgorithms: ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,ssh-rsa,ssh-rsa-cert-v01@openssh.com
+      GSSAPIKexAlgorithms: gss-curve25519-sha256-
+      PubkeyAcceptedKeyTypes: ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-256,rsa-sha2-512,ssh-rsa,ssh-rsa-cert-v01@openssh.com
+    # Don't change below unless you know what you are doing
+    centos8_crypto_policy: "CRYPTO_POLICY='-oCiphers={{ ssh_crypto.Ciphers }} -oMACs={{ ssh_crypto.MACs }} -oGSSAPIKexAlgorithms={{ ssh_crypto.GSSAPIKexAlgorithms }} -oKexAlgorithms={{ ssh_crypto.KexAlgorithms }} -oHostKeyAlgorithms={{ ssh_crypto.HostKeyAlgorithms }} -oPubkeyAcceptedKeyTypes={{ ssh_crypto.PubkeyAcceptedKeyTypes }}'"
+    centos7_crypto_policy:
+      - key: KexAlgorithms
+        value: "{{ ssh_crypto.KexAlgorithms }}"
+      - key: Ciphers
+        value: "{{ ssh_crypto.Ciphers }}"
+      - key: MACs
+        value: "{{ ssh_crypto.MACs }}"
+      - key: PubkeyAcceptedKeyTypes
+        value: "{{ ssh_crypto.PubkeyAcceptedKeyTypes }}"
+
+  handlers:
+    - name: "sshd | Restart sshd"
+      systemd:
+        name: sshd
+        state: restarted
+      listen: "restart sshd"
+
+  pre_tasks:
+    - fail:
+        msg: "This role can only be run on CentOS/RedHat"
+      when: ansible_os_family != 'RedHat'
+
+    - name: "Install libselinux-python"
+      package:
+        name: libselinux-python
+        state: installed
+      when: ansible_os_family == 'RedHat' and ansible_distribution_major_version == '7'
+
+    - name: "Install python3-libselinux"
+      package:
+        name: python3-libselinux
+        state: installed
+      when: ansible_os_family == 'RedHat' and ansible_distribution_major_version == '8'
+
+  tasks:
+    - name: "config | Apply configs to /etc/ssh/sshd_config"
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^{{ item.key }}'
+        line: "{{ item.key }} {{ item.value }}"
+      with_items: "{{ sshd_configs }}"
+      tags: ['config']
+      notify: "restart sshd"
+
+    - name: "config | Disable default hostkey"
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        state: absent
+        regexp: '^{{item}}$'
+      with_items:
+        - HostKey /etc/ssh/ssh_host_ecdsa_key
+        - HostKey /etc/ssh/ssh_host_dsa_key
+        - HostKey /etc/ssh/ssh_host_rsa_key
+        - HostKey /etc/ssh/ssh_host_ed25519_key
+      tags: ['config']
+      notify: "restart sshd"
+
+    - name: "config | Enable ED25519 host key"
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^{{ item }}'
+        line: "{{ item }}"
+      with_items:
+        - HostKey /etc/ssh/ssh_host_ed25519_key_harden
+      tags: ['config']
+      notify: "restart sshd"
+
+    - name: "sshkeys | Generate ED25519 key /etc/ssh/ssh_host_ed25519_key_harden"
+      openssh_keypair:
+        type: ed25519
+        path: /etc/ssh/ssh_host_ed25519_key_harden
+      register: sshkey_ed25519
+      tags: ['sshkeys']
+      notify: "restart sshd"
+
+    - name: "sshkeys | Set group and ownership"
+      file:
+        path: "{{ item }}"
+        group: ssh_keys
+        mode: g+r
+      with_items:
+        - /etc/ssh/ssh_host_ed25519_key_harden
+      tags: ['sshkeys']
+
+    - name: "diffie | Remove small Diffie-Hellman moduli"
+      shell: awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe
+      tags: ['diffie']
+
+    - name: "diffie | Remove small Diffie-Hellman moduli"
+      shell: mv -f /etc/ssh/moduli.safe /etc/ssh/moduli
+      tags: ['diffie']
+
+    - name: "crypto | Restrict supported key exchange, cipher, and MAC algorithms CENTOS 8"
+      copy:
+        content: "{{ centos8_crypto_policy }}"
+        dest: /etc/crypto-policies/back-ends/opensshserver.config
+        backup: yes
+      tags: ['crypto']
+      notify: "restart sshd"
+      when: ansible_os_family == 'RedHat' and ansible_distribution_major_version == '8'
+
+    - name: "crypto | Restrict supported key exchange, cipher, and MAC algorithms CENTOS 7"
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^{{ item.key }}'
+        line: "{{ item.key }} {{ item.value }}"
+      with_items: "{{ centos7_crypto_policy }}"
+      tags: ['crypto']
+      notify: "restart sshd"
+      when: ansible_os_family == 'RedHat' and ansible_distribution_major_version == '7'
