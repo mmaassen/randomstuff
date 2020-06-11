@@ -70,7 +70,16 @@ m_der2pem(){
     echo "[>] Your certificate is saved at: ${FOLDER}/${FILE}"
 }
 
-
+m_createp12(){
+    PASSWORD=$(date +%s | sha256sum | base64 | head -c 32)
+    BASEPATH="~"
+    mkdir -p ${BASEPATH}
+    CERTNAME="$1"
+    SUBJECT="/CN=${CERTNAME}"
+    openssl req -x509 -nodes -sha256 -days 3650 -newkey rsa:4096 -keyout "${BASEPATH}/${CERTNAME}.key" -out "${BASEPATH}/${CERTNAME}.pem" -subj "$SUBJECT" >/dev/null
+    openssl pkcs12 -export -out "${BASEPATH}/${CERTNAME}.${PASSWORD}.pfx" -inkey "${BASEPATH}/${CERTNAME}.key" -in "${BASEPATH}/${CERTNAME}.pem" -passout pass:${PASSWORD} >/dev/null 
+    echo "Created ${BASEPATH}/${CERTNAME}.${PASSWORD}.pfx"
+}
 
 
 m_download_certificate(){
