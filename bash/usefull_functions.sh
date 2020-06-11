@@ -72,7 +72,7 @@ m_der2pem(){
 
 m_createp12(){
     PASSWORD=$(date +%s | sha256sum | base64 | head -c 32)
-    BASEPATH="~"
+    BASEPATH="~/Certificaten/SelfSigned"
     mkdir -p ${BASEPATH}
     CERTNAME="$1"
     SUBJECT="/CN=${CERTNAME}"
